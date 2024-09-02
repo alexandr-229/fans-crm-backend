@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { genSalt, hash } from 'bcryptjs';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { genSalt, hash, compare } from 'bcryptjs';
 import { IUser } from './types/user';
 import { InjectModel } from '@nestjs/sequelize';
 import { User } from './models/user.model';
@@ -33,6 +33,28 @@ export class AppService {
 			email: newUser.email,
 		};
 
+		const token = this.jwtService.sign(payload);
+
+		return {
+			token,
+		};
+	}
+
+	async login(email: string, password: string) {
+		const user = await this.userModel.findOne({ where: { email } });
+		if (!user) {
+			throw new NotFoundException('User not found');
+		}
+
+		const passwordValid = await compare(password, user.password);
+		if (!passwordValid) {
+			throw new BadRequestException('Invalid password');
+		}
+
+		const payload: JWTPayload = {
+			id: user.id,
+			email: user.email,
+		};
 		const token = this.jwtService.sign(payload);
 
 		return {
