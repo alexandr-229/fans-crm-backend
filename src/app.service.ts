@@ -5,6 +5,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { User } from './models/user.model';
 import { JwtService } from '@nestjs/jwt';
 import { JWTPayload } from './types/jwt-payload';
+import { INVALID_PASSWORD, USER_ALREADY_EXISTS, USER_NOT_FOUND } from './constants/auth';
 
 @Injectable()
 export class AppService {
@@ -17,7 +18,7 @@ export class AppService {
 	async register(user: Omit<IUser, 'id'>) {
 		const existsUser = await this.userModel.findOne({ where: { email: user.email } });
 		if (existsUser) {
-			throw new BadRequestException('User already exists');
+			throw new BadRequestException(USER_ALREADY_EXISTS);
 		}
 
 		const salt = await genSalt(10);
@@ -43,12 +44,12 @@ export class AppService {
 	async login(email: string, password: string) {
 		const user = await this.userModel.findOne({ where: { email } });
 		if (!user) {
-			throw new NotFoundException('User not found');
+			throw new NotFoundException(USER_NOT_FOUND);
 		}
 
 		const passwordValid = await compare(password, user.password);
 		if (!passwordValid) {
-			throw new BadRequestException('Invalid password');
+			throw new BadRequestException(INVALID_PASSWORD);
 		}
 
 		const payload: JWTPayload = {
@@ -65,7 +66,7 @@ export class AppService {
 	async findUserByEmail(email: string) {
 		const user = await this.userModel.findOne({ where: { email }, attributes: { exclude: ['password'] } });
 		if (!user) {
-			throw new NotFoundException('User not found');
+			throw new NotFoundException(USER_NOT_FOUND);
 		}
 
 		return user;
