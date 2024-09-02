@@ -61,4 +61,13 @@ export class AppService {
 			token,
 		};
 	}
+
+	async findUserByEmail(email: string) {
+		const user = await this.userModel.findOne({ where: { email }, attributes: { exclude: ['password'] } });
+		if (!user) {
+			throw new NotFoundException('User not found');
+		}
+
+		return user;
+	}
 }
